@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Todo App with Htmx+Go</title>
+    <script>
+      // Clear the form after submitting
+      document.addEventListener('htmx:afterSwap', function (evt) {
+        const form = document.querySelector('#todo-form');
+        form.reset();
+        showSuccessMessage('Todo updated successfully.');
+      });
+
+      // Listen for errors and show an error message
+      document.addEventListener('htmx:error', function (evt) {
+        showErrorMessage('An error occurred. Please try again.');
+      });
+
+      function showSuccessMessage(message) {
+        const successMessage = document.querySelector('#success-message');
+        successMessage.textContent = message;
+        successMessage.classList.remove('hidden');
+        setTimeout(() => {
+          successMessage.classList.add('hidden');
+        }, 3000); // Hide success message after 3 seconds
+      }
+
+      function showErrorMessage(message) {
+        const errorMessage = document.querySelector('#error-message');
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('hidden');
+        setTimeout(() => {
+          errorMessage.classList.add('hidden');
+        }, 5000); // Hide error message after 5 seconds
+      }
+    </script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex flex-col items-center mt-10 p-4">
+      <h2 class="text-4xl font-bold text-gray-800 mb-6">Todos</h2>
+      <form
+        id="todo-form"
+        hx-post="/add-todo"
+        hx-target="#todo-list"
+        hx-swap="beforeend"
+        class="w-full max-w-md"
+      >
+        <div class="flex mb-4">
+          <input
+            class="flex-grow border-2 border-gray-300 rounded-l-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            type="text"
+            name="todo"
+            id="todo"
+            placeholder="Add a todo"
+            required
+          />
+          <button
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold p-2 rounded-r-md"
+            type="submit"
+          >
+            Add
+          </button>
+        </div>
+      </form>
+      <ul class="w-full max-w-md bg-white rounded-lg shadow-md" id="todo-list">
+        {{ range .todos }} {{ block "todo-list-element" . }}
+        <li
+          class="flex justify-between items-center border-b border-gray-200 p-4"
+          id="todo-{{ .Id }}"
+        >
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              class="mr-2"
+              hx-post="/toggle-todo?id={{ .Id }}"
+              hx-trigger="change"
+              hx-target="#todo-{{ .Id }}"
+              hx-swap="outerHTML"
+              {{
+              if
+              .Completed
+              }}checked{{
+              end
+              }}
+            />
+            <span
+              class="text-gray-800 {{ if .Completed }}line-through text-gray-400{{ end }}"
+              >{{ .Text }}</span
+            >
+          </div>
+          <button
+            class="bg-red-500 hover:bg-red-700 text-white font-bold p-2 rounded"
+            hx-delete="/delete-todo?id={{ .Id }}"
+            hx-target="#todo-{{ .Id }}"
+            hx-swap="outerHTML"
+          >
+            Delete
+          </button>
+        </li>
+        {{ end }} {{ end }}
+      </ul>
+      <div id="success-message" class="text-green-500 mt-4 hidden">
+        Todo updated successfully.
+      </div>
+      <div id="error-message" class="text-red-500 mt-4 hidden">
+        An error occurred. Please try again.
+      </div>
+    </div>
+  </body>
+</html>
